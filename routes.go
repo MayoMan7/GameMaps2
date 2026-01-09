@@ -12,6 +12,12 @@ func (s *Server) createUserRoute(r *mux.Router) {
 	r.HandleFunc("/users", s.handleCreateUser).Methods("POST")
 }
 
+type Payload struct {
+	Status string      `json:"status"`
+	Data   interface{} `json:"data,omitempty"`
+	Error  string      `json:"error,omitempty"`
+}
+
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	// parse request body -> user
 	// then call your db function:
@@ -43,6 +49,16 @@ func (s *Server) handleGetGameByAppID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid app ID", http.StatusBadRequest)
 		return
 	}
-	gamename, err := GetGameByAppID(r.Context(), s.DB, id)
-	json.NewEncoder(w).Encode(gamename)
+	game, err := GetGameByAppID(r.Context(), s.DB, id)
+	fmt.Println(game.Name)
+	if err != nil {
+		http.Error(w, "Failed to retrieve game", http.StatusInternalServerError)
+		return
+	}
+	p := Payload{Status: "success", Data: game, Error: ""}
+	err = json.NewEncoder(w).Encode(p)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

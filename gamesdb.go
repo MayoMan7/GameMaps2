@@ -8,19 +8,19 @@ import (
 )
 
 type Game struct {
-	app_id               int64
-	name                 string
-	release_date         string
-	detailed_description string
-	about_the_game       string
-	header_image         string
-	metacritic_score     int
-	achievements         int
-	recommendations      int
-	positve              int
-	negative             int
-	tags                 map[string]int
-	embedings            []float64 // (optional) only if you add this column later (pgvector or array)
+	AppID               int64          `json:"app_id"`
+	Name                string         `json:"name"`
+	ReleaseDate         string         `json:"release_date"`
+	DetailedDescription string         `json:"detailed_description"`
+	AboutTheGame        string         `json:"about_the_game"`
+	HeaderImage         string         `json:"header_image"`
+	MetacriticScore     int            `json:"metacritic_score"`
+	Achievements        int            `json:"achievements"`
+	Recommendations     int            `json:"recommendations"`
+	Positive            int            `json:"positive"`
+	Negative            int            `json:"negative"`
+	Tags                map[string]int `json:"tags"`
+	Embeddings          []float64      `json:"embeddings,omitempty"`
 }
 
 // GetGameByAppID returns the full game row as a Game struct.
@@ -29,39 +29,39 @@ type Game struct {
 // - embedding is not in your table right now, so we return it as nil (or empty slice).
 func GetGameByAppID(ctx context.Context, db *sql.DB, appID int64) (*Game, error) {
 	const q = `
-SELECT
-  app_id,
-  name,
-  release_date,
-  detailed_description,
-  about_the_game,
-  header_image,
-  metacritic_score,
-  achievements,
-  recommendations,
-  positive,
-  negative,
-  COALESCE(tags, '{}'::jsonb)::text AS tags_json
-FROM public.steam_games
-WHERE app_id = $1
-LIMIT 1;
-`
+		SELECT
+		app_id,
+		name,
+		release_date,
+		detailed_description,
+		about_the_game,
+		header_image,
+		metacritic_score,
+		achievements,
+		recommendations,
+		positive,
+		negative,
+		COALESCE(tags, '{}'::jsonb)::text AS tags_json
+		FROM public.steam_games
+		WHERE app_id = $1
+		LIMIT 1;
+	`
 
 	var g Game
 	var tagsJSON string
 
 	err := db.QueryRowContext(ctx, q, appID).Scan(
-		&g.app_id,
-		&g.name,
-		&g.release_date,
-		&g.detailed_description,
-		&g.about_the_game,
-		&g.header_image,
-		&g.metacritic_score,
-		&g.achievements,
-		&g.recommendations,
-		&g.positve,
-		&g.negative,
+		&g.AppID,
+		&g.Name,
+		&g.ReleaseDate,
+		&g.DetailedDescription,
+		&g.AboutTheGame,
+		&g.HeaderImage,
+		&g.MetacriticScore,
+		&g.Achievements,
+		&g.Recommendations,
+		&g.Positive,
+		&g.Negative,
 		&tagsJSON,
 	)
 
@@ -74,18 +74,18 @@ LIMIT 1;
 
 	// Parse tags JSON into map[string]int
 	if tagsJSON == "" || tagsJSON == "null" {
-		g.tags = map[string]int{}
+		g.Tags = map[string]int{}
 	} else {
 		var tags map[string]int
 		if err := json.Unmarshal([]byte(tagsJSON), &tags); err != nil {
 			return nil, fmt.Errorf("unmarshal tags for app_id=%d: %w", appID, err)
 		}
-		g.tags = tags
+		g.Tags = tags
 	}
 
 	// You don't have embeddings in the table yet, so leave nil/empty.
-	g.embedings = nil
-	fmt.Println(g)
+	g.Embeddings = nil
+	// fmt.Println(g)
 
 	return &g, nil
 }
