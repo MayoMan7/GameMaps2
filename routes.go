@@ -8,6 +8,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func (s *Server) homeHandler(r *mux.Router) {
+	r.HandleFunc("/", s.handleHome).Methods("GET")
+}
+func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Welcome to the Game Database API"))
+}
+
 func (s *Server) createUserRoute(r *mux.Router) {
 	r.HandleFunc("/users", s.handleCreateUser).Methods("POST")
 }
@@ -49,12 +57,17 @@ func (s *Server) handleGetGameByAppID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid app ID", http.StatusBadRequest)
 		return
 	}
-	game, err := GetGameByAppID(r.Context(), s.DB, id)
-	fmt.Println(game.Name)
+	var game *Game
+	game, err = GetGameByAppID(r.Context(), s.DB, id)
 	if err != nil {
 		http.Error(w, "Failed to retrieve game", http.StatusInternalServerError)
 		return
 	}
+	if game == nil {
+		http.Error(w, "Game not found", http.StatusNotFound)
+		return
+	}
+	fmt.Println(game.Name)
 	p := Payload{Status: "success", Data: game, Error: ""}
 	err = json.NewEncoder(w).Encode(p)
 	if err != nil {
