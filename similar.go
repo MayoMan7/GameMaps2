@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math"
 	"sort"
+
+	"github.com/lib/pq"
 )
 
 type DBSimilarResult struct {
@@ -115,6 +117,96 @@ func FindSimilarGamesFromDB(ctx context.Context, db *sql.DB, targetAppID int64, 
 	}
 
 	return results, targetEmb, nil
+}
+
+// FindGamesForUserTaste finds games similar to a user's taste embedding.
+// It excludes games the user has already liked.
+func FindGamesForUserTaste(ctx context.Context, db *sql.DB, userID int64, topK int, candidateLimit int) ([]DBSimilarResult, error) {
+	if topK <= 0 {
+		return nil, nil
+	}
+
+	// Get user with their taste embedding and liked games
+	user, err := GetUserByID(ctx, db, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user id=%d not found", userID)
+	}
+	if len(user.TasteEmbedding) == 0 {
+		return nil, fmt.Errorf("user id=%d has no taste embedding (like some games first)", userID)
+	}
+
+	// Build query to get candidate games, excluding already-liked games
+	q := `
+		SELECT app_id, name, COALESCE(tfidf_embedding, '{}'::jsonb)::text
+		FROM public.steam_games
+		WHERE tfidf_embedding IS NOT NULL
+	`
+	
+	// Exclude already-liked games if user has any
+	if len(user.GamesLiked) > 0 {
+		q += " AND app_id <> ALL($1)"
+	}
+	
+	if candidateLimit > 0 {
+		q += fmt.Sprintf("\nLIMIT %d", candidateLimit)
+	}
+	q += ";"
+
+	var rows *sql.Rows
+	if len(user.GamesLiked) > 0 {
+		rows, err = db.QueryContext(ctx, q, pq.Array(user.GamesLiked))
+	} else {
+		rows, err = db.QueryContext(ctx, q)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query candidates: %w", err)
+	}
+	defer rows.Close()
+
+	results := make([]DBSimilarResult, 0, topK*4)
+
+	for rows.Next() {
+		var appID int64
+		var name, embJSON string
+		if err := rows.Scan(&appID, &name, &embJSON); err != nil {
+			continue
+		}
+
+		emb := make(map[string]float64)
+		if embJSON != "" && embJSON != "null" && embJSON != "{}" {
+			if err := json.Unmarshal([]byte(embJSON), &emb); err != nil {
+				continue
+			}
+		}
+		if len(emb) == 0 {
+			continue
+		}
+
+		score := cosineSim(user.TasteEmbedding, emb)
+		if score <= 0 {
+			continue
+		}
+
+		results = append(results, DBSimilarResult{
+			AppID: appID,
+			Name:  name,
+			Score: score,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate candidates: %w", err)
+	}
+
+	sort.Slice(results, func(i, j int) bool { return results[i].Score > results[j].Score })
+	if len(results) > topK {
+		results = results[:topK]
+	}
+
+	return results, nil
 }
 
 func loadEmbeddingOnly(ctx context.Context, db *sql.DB, appID int64) (map[string]float64, error) {

@@ -28,9 +28,18 @@ func main() {
 	s := &Server{DB: db}
 
 	r := mux.NewRouter()
-	s.createUserRoute(r)
+
+	// Game routes
 	s.GetGameByAppIDRoute(r)
 	s.GetRecommendedGamesRoute(r)
+
+	// User routes
+	s.CreateUserRoute(r)
+	s.GetUserByIDRoute(r)
+	s.AddLikedGameRoute(r)
+	s.RecomputeTasteRoute(r)
+	s.GetUserRecommendationsRoute(r)
+
 	s.homeHandler(r)
 
 	log.Println("Listening on :8080")
