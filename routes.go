@@ -75,3 +75,50 @@ func (s *Server) handleGetGameByAppID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (s *Server) GetRecommendedGamesRoute(r *mux.Router) {
+	r.HandleFunc("/recommend/{id}", s.handleGetRecommendedGames).Methods("GET")
+}
+
+type RecommendedGame struct {
+	AppID int64   `json:"app_id"`
+	Name  string  `json:"name"`
+	Score float64 `json:"score"`
+}
+
+func (s *Server) handleGetRecommendedGames(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	appID := vars["id"]
+
+	var id int64
+	_, err := fmt.Sscanf(appID, "%d", &id)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Invalid app ID"})
+		return
+	}
+
+	// Find top 10 similar games, searching up to 10000 candidates
+	results, _, err := FindSimilarGamesFromDB(r.Context(), s.DB, id, 10, 10000)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
+		return
+	}
+
+	// Convert to response format
+	recommendations := make([]RecommendedGame, len(results))
+	for i, res := range results {
+		recommendations[i] = RecommendedGame{
+			AppID: res.AppID,
+			Name:  res.Name,
+			Score: res.Score,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(Payload{Status: "success", Data: recommendations})
+}
