@@ -1,5 +1,3 @@
-// Main entry point - runs the web server.
-// For other commands: go run ./cmd/embed (TF-IDF pipeline), go run ./cmd/cli (interactive).
 package main
 
 import (
