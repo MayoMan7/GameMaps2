@@ -2,6 +2,7 @@ package tfidf
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode"
 
@@ -12,6 +13,13 @@ var stopwords = map[string]struct{}{
 	"the": {}, "and": {}, "of": {}, "to": {}, "in": {}, "as": {}, "at": {}, "up": {},
 	"for": {}, "a": {}, "an": {}, "on": {}, "is": {}, "it": {}, "this": {}, "that": {},
 	"with": {}, "by": {}, "or": {}, "from": {}, "be": {}, "also": {}, "well": {},
+}
+
+var franchiseNoise = map[string]struct{}{
+	"edition": {}, "definitive": {}, "ultimate": {}, "complete": {}, "goty": {}, "remastered": {},
+	"remaster": {}, "collection": {}, "bundle": {}, "pack": {}, "dlc": {}, "season": {},
+	"episode": {}, "chapter": {}, "anniversary": {}, "enhanced": {}, "expansion": {},
+	"beta": {}, "demo": {}, "soundtrack": {}, "upgrade": {}, "deluxe": {},
 }
 
 // TokenizeString tokenizes a string into lowercase tokens, filtering short and stopwords.
@@ -60,6 +68,52 @@ func tokenizeMapStringInt(m map[string]int) []string {
 	return tokens
 }
 
+func isNumericToken(tok string) bool {
+	for _, r := range tok {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return tok != ""
+}
+
+func isRomanNumeral(tok string) bool {
+	for _, r := range tok {
+		switch r {
+		case 'i', 'v', 'x', 'l', 'c', 'd', 'm':
+		default:
+			return false
+		}
+	}
+	return tok != ""
+}
+
+func applyTokenWeight(tok string, base float64) float64 {
+	if base <= 0 {
+		return 0
+	}
+	if _, ok := franchiseNoise[tok]; ok {
+		base *= 0.2
+	}
+	if isNumericToken(tok) || isRomanNumeral(tok) {
+		base *= 0.2
+	}
+	return base
+}
+
+func addWeightedTokens(out map[string]float64, tokens []string, weight float64) {
+	if weight <= 0 {
+		return
+	}
+	for _, tok := range tokens {
+		w := applyTokenWeight(tok, weight)
+		if w <= 0 {
+			continue
+		}
+		out[tok] += w
+	}
+}
+
 // TokenizeGame tokenizes a game into a document for TF-IDF.
 func TokenizeGame(game *models.Game) []string {
 	var tokens []string
@@ -73,6 +127,38 @@ func TokenizeGame(game *models.Game) []string {
 	tokens = append(tokens, tokenizeArrayOfString(game.Genres)...)
 	tokens = append(tokens, tokenizeMapStringInt(game.Tags)...)
 	return tokens
+}
+
+// TokenizeGameWeighted tokenizes a game into weighted tokens for TF-IDF.
+func TokenizeGameWeighted(game *models.Game) map[string]float64 {
+	out := make(map[string]float64, 256)
+
+	// Field weights: reduce title dominance, favor tags/genres for experience similarity.
+	addWeightedTokens(out, TokenizeString(game.Name), 0.15)
+	addWeightedTokens(out, TokenizeString(game.ShortDescription), 0.6)
+	addWeightedTokens(out, TokenizeString(game.DetailedDescription), 0.35)
+	addWeightedTokens(out, TokenizeString(game.AboutTheGame), 0.35)
+	addWeightedTokens(out, tokenizeArrayOfString(game.Developers), 0.25)
+	addWeightedTokens(out, tokenizeArrayOfString(game.Publishers), 0.2)
+	addWeightedTokens(out, tokenizeArrayOfString(game.Categories), 0.9)
+	addWeightedTokens(out, tokenizeArrayOfString(game.Genres), 1.1)
+
+	for tag, count := range game.Tags {
+		if tag == "" {
+			continue
+		}
+		toks := TokenizeString(tag)
+		if len(toks) == 0 {
+			continue
+		}
+		boost := math.Log1p(float64(count))
+		if boost < 1 {
+			boost = 1
+		}
+		addWeightedTokens(out, toks, 1.15*boost)
+	}
+
+	return out
 }
 
 // TokenizeInt returns a single string token for an int.

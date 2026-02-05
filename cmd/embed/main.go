@@ -46,16 +46,16 @@ func main() {
 	}
 	fmt.Printf("Using first %d games\n", CUTOFF)
 
-	corpus := make([][]string, CUTOFF)
+	corpus := make([]map[string]float64, CUTOFF)
 	for i := 0; i < CUTOFF; i++ {
-		corpus[i] = tfidf.TokenizeGame(&games[i])
+		corpus[i] = tfidf.TokenizeGameWeighted(&games[i])
 	}
 	fmt.Println("Tokenization complete")
 
-	df := tfidf.PrecomputeDocumentsContainingTerm(corpus)
+	df := tfidf.PrecomputeDocumentsContainingTermWeighted(corpus)
 	fmt.Println("Document frequency computed. Vocab size:", len(df))
 
-	idfmap := tfidf.PrecomputeIDF(corpus, df)
+	idfmap := tfidf.PrecomputeIDFWeighted(corpus, df)
 	fmt.Println("IDF precomputation complete")
 
 	numWorkers := min(runtime.NumCPU(), 12)
@@ -70,7 +70,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for i := range jobs {
-				emb := tfidf.TFIDFEmbedding(corpus[i], idfmap)
+				emb := tfidf.TFIDFEmbeddingWeighted(corpus[i], idfmap)
 				if err := db.SaveGameEmbedding(ctx, database, games[i].AppID, emb); err != nil {
 					log.Printf("[worker %d] save failed app_id=%d: %v", workerID, games[i].AppID, err)
 				}
