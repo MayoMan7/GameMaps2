@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"gogamemaps/internal/db"
 	"gogamemaps/internal/models"
+	"gogamemaps/internal/tfidf"
 
 	"github.com/lib/pq"
 )
@@ -134,6 +136,18 @@ func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, 
 	if len(user.TasteEmbedding) == 0 {
 		return nil, fmt.Errorf("user id=%d has no taste embedding (like some games first)", userID)
 	}
+	likedNames, err := db.GetGameNamesByAppIDs(ctx, database, user.GamesLiked)
+	if err != nil {
+		return nil, err
+	}
+	likedTokens := make([]map[string]struct{}, 0, len(user.GamesLiked))
+	for _, appID := range user.GamesLiked {
+		name := likedNames[appID]
+		if name == "" {
+			continue
+		}
+		likedTokens = append(likedTokens, normalizeTitleTokens(name))
+	}
 
 	q := `
 		SELECT app_id, name, COALESCE(tfidf_embedding, '{}'::jsonb)::text
@@ -176,6 +190,7 @@ func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, 
 		if score <= 0 {
 			continue
 		}
+		score *= franchisePenalty(name, likedTokens)
 		results = append(results, models.SimilarResult{AppID: appID, Name: name, Score: score})
 	}
 	if err := rows.Err(); err != nil {
@@ -186,10 +201,11 @@ func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, 
 		deduped := make([]models.SimilarResult, 0, topK)
 		seenNames := make(map[string]struct{}, topK*2)
 		for _, r := range results {
-			if _, exists := seenNames[r.Name]; exists {
+			key := normalizeName(r.Name)
+			if _, exists := seenNames[key]; exists {
 				continue
 			}
-			seenNames[r.Name] = struct{}{}
+			seenNames[key] = struct{}{}
 			deduped = append(deduped, r)
 			if len(deduped) >= topK {
 				break
@@ -198,6 +214,56 @@ func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, 
 		results = deduped
 	}
 	return results, nil
+}
+
+func normalizeName(name string) string {
+	name = strings.ToLower(strings.TrimSpace(name))
+	name = strings.ReplaceAll(name, ":", " ")
+	name = strings.ReplaceAll(name, "-", " ")
+	name = strings.ReplaceAll(name, "™", "")
+	name = strings.ReplaceAll(name, "®", "")
+	name = strings.ReplaceAll(name, "©", "")
+	name = strings.Join(strings.Fields(name), " ")
+	return name
+}
+
+func normalizeTitleTokens(name string) map[string]struct{} {
+	tokens := tfidf.TokenizeString(normalizeName(name))
+	set := make(map[string]struct{}, len(tokens))
+	for _, t := range tokens {
+		set[t] = struct{}{}
+	}
+	return set
+}
+
+func franchisePenalty(candidate string, liked []map[string]struct{}) float64 {
+	if len(liked) == 0 {
+		return 1
+	}
+	cTokens := normalizeTitleTokens(candidate)
+	if len(cTokens) == 0 {
+		return 1
+	}
+	maxOverlap := 0
+	for _, lTokens := range liked {
+		overlap := 0
+		for t := range cTokens {
+			if _, ok := lTokens[t]; ok {
+				overlap++
+			}
+		}
+		if overlap > maxOverlap {
+			maxOverlap = overlap
+		}
+	}
+	if maxOverlap == 0 {
+		return 1
+	}
+	penalty := 1.0 - math.Min(0.5, 0.12*float64(maxOverlap))
+	if penalty < 0.5 {
+		penalty = 0.5
+	}
+	return penalty
 }
 
 // SharedTopTerms returns up to topN overlapping tokens ranked by contribution.

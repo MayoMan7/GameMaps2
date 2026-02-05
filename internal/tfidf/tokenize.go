@@ -134,9 +134,9 @@ func TokenizeGameWeighted(game *models.Game) map[string]float64 {
 	out := make(map[string]float64, 256)
 
 	// Field weights: reduce title dominance, favor tags/genres for experience similarity.
-	addWeightedTokens(out, TokenizeString(game.Name), 0.15)
+	addWeightedTokens(out, TokenizeString(game.Name), 0.1)
 	addWeightedTokens(out, TokenizeString(game.ShortDescription), 0.6)
-	addWeightedTokens(out, TokenizeString(game.DetailedDescription), 0.35)
+	addWeightedTokens(out, TokenizeString(game.DetailedDescription), 0.25)
 	addWeightedTokens(out, TokenizeString(game.AboutTheGame), 0.35)
 	addWeightedTokens(out, tokenizeArrayOfString(game.Developers), 0.25)
 	addWeightedTokens(out, tokenizeArrayOfString(game.Publishers), 0.2)
@@ -155,7 +155,7 @@ func TokenizeGameWeighted(game *models.Game) map[string]float64 {
 		if boost < 1 {
 			boost = 1
 		}
-		addWeightedTokens(out, toks, 1.15*boost)
+		addWeightedTokens(out, toks, 1*boost)
 	}
 
 	return out
