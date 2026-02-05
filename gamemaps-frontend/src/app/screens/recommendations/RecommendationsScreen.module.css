@@ -1,0 +1,99 @@
+.page {
+  display: grid;
+  gap: 32px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.recs {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.recRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(6, 10, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recName {
+  font-weight: 600;
+}
+
+.recMeta {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.recScore {
+  font-weight: 700;
+  color: #f6b35b;
+}
+
+.emptyState {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  padding-top: 12px;
+}
+
+.loadingState {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  padding-top: 12px;
+}
+
+.loadingPulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(246, 179, 91, 0.8);
+  box-shadow: 0 0 12px rgba(246, 179, 91, 0.6);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.toast {
+  margin-top: 12px;
+  background: rgba(12, 18, 28, 0.9);
+  border: 1px solid rgba(246, 179, 91, 0.45);
+  padding: 10px 16px;
+  border-radius: 12px;
+  color: var(--color-text-strong);
+  width: fit-content;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}

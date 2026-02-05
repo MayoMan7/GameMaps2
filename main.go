@@ -29,6 +29,7 @@ func main() {
 
 	s.GameRoutes(r)
 	s.UserRoutes(r)
+	s.AuthRoutes(r)
 	s.HomeHandler(r)
 
 	log.Println("Listening on :8080")

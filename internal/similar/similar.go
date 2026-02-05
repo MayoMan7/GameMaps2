@@ -120,7 +120,7 @@ func FindSimilarGamesFromDB(ctx context.Context, database *sql.DB, targetAppID i
 }
 
 // FindGamesForUserTaste finds games similar to a user's taste embedding.
-func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, topK int, candidateLimit int) ([]models.SimilarResult, error) {
+func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, topK int) ([]models.SimilarResult, error) {
 	if topK <= 0 {
 		return nil, nil
 	}
@@ -142,9 +142,6 @@ func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, 
 	`
 	if len(user.GamesLiked) > 0 {
 		q += " AND app_id <> ALL($1)"
-	}
-	if candidateLimit > 0 {
-		q += fmt.Sprintf("\nLIMIT %d", candidateLimit)
 	}
 	q += ";"
 
@@ -185,8 +182,20 @@ func FindGamesForUserTaste(ctx context.Context, database *sql.DB, userID int64, 
 		return nil, fmt.Errorf("iterate candidates: %w", err)
 	}
 	sort.Slice(results, func(i, j int) bool { return results[i].Score > results[j].Score })
-	if len(results) > topK {
-		results = results[:topK]
+	if topK > 0 {
+		deduped := make([]models.SimilarResult, 0, topK)
+		seenNames := make(map[string]struct{}, topK*2)
+		for _, r := range results {
+			if _, exists := seenNames[r.Name]; exists {
+				continue
+			}
+			seenNames[r.Name] = struct{}{}
+			deduped = append(deduped, r)
+			if len(deduped) >= topK {
+				break
+			}
+		}
+		results = deduped
 	}
 	return results, nil
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"gogamemaps/internal/models"
+
+	"github.com/lib/pq"
 )
 
 func trimJSONText(s string) string {
@@ -282,6 +284,33 @@ func GetGameNameByAppID(ctx context.Context, db *sql.DB, appID int64) (string, e
 		return "", fmt.Errorf("get name app_id=%d: %w", appID, err)
 	}
 	return name, nil
+}
+
+// GetGameNamesByAppIDs returns a map of app_id -> name for the provided IDs.
+func GetGameNamesByAppIDs(ctx context.Context, db *sql.DB, appIDs []int64) (map[int64]string, error) {
+	out := make(map[int64]string)
+	if len(appIDs) == 0 {
+		return out, nil
+	}
+	const q = `SELECT app_id, name FROM public.steam_games WHERE app_id = ANY($1);`
+	rows, err := db.QueryContext(ctx, q, pq.Array(appIDs))
+	if err != nil {
+		return nil, fmt.Errorf("get names by app ids: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		var name string
+		if err := rows.Scan(&id, &name); err != nil {
+			continue
+		}
+		out[id] = name
+	}
+	if err := rows.Err(); err != nil {
+		return out, fmt.Errorf("get names by app ids: %w", err)
+	}
+	return out, nil
 }
 
 func escapeLikeEscapes(s string) string {

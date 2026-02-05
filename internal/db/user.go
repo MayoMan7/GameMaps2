@@ -33,7 +33,7 @@ func CreateUser(ctx context.Context, db *sql.DB, name string) (int64, error) {
 // GetUserByID loads a user row.
 func GetUserByID(ctx context.Context, db *sql.DB, userID int64) (*models.User, error) {
 	const q = `
-		SELECT id, name, games_liked, COALESCE(taste_embedding, '{}'::jsonb)::text
+		SELECT id, name, COALESCE(email, ''), games_liked, COALESCE(taste_embedding, '{}'::jsonb)::text
 		FROM public.users
 		WHERE id = $1
 		LIMIT 1;
@@ -41,7 +41,7 @@ func GetUserByID(ctx context.Context, db *sql.DB, userID int64) (*models.User, e
 
 	var u models.User
 	var embJSON string
-	if err := db.QueryRowContext(ctx, q, userID).Scan(&u.ID, &u.Name, pq.Array(&u.GamesLiked), &embJSON); err != nil {
+	if err := db.QueryRowContext(ctx, q, userID).Scan(&u.ID, &u.Name, &u.Email, pq.Array(&u.GamesLiked), &embJSON); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -54,6 +54,27 @@ func GetUserByID(ctx context.Context, db *sql.DB, userID int64) (*models.User, e
 	}
 
 	return &u, nil
+}
+
+// UpdateUserName updates a user's display name.
+func UpdateUserName(ctx context.Context, db *sql.DB, userID int64, name string) error {
+	if name == "" {
+		return fmt.Errorf("name cannot be empty")
+	}
+	const q = `
+		UPDATE public.users
+		SET name = $2
+		WHERE id = $1;
+	`
+	res, err := db.ExecContext(ctx, q, userID, name)
+	if err != nil {
+		return fmt.Errorf("update user name id=%d: %w", userID, err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("user id=%d not found", userID)
+	}
+	return nil
 }
 
 // AddLikedGame adds appID to games_liked (no duplicates).
@@ -99,7 +120,7 @@ func RecomputeAndSaveTasteEmbedding(ctx context.Context, db *sql.DB, userID int6
 	used := 0
 
 	for _, appID := range u.GamesLiked {
-		emb, err := loadGameEmbeddingOnly(ctx, db, appID)
+		emb, err := GetGameEmbeddingByAppID(ctx, db, appID)
 		if err != nil || len(emb) == 0 {
 			continue
 		}
@@ -114,7 +135,8 @@ func RecomputeAndSaveTasteEmbedding(ctx context.Context, db *sql.DB, userID int6
 	return taste, used, nil
 }
 
-func loadGameEmbeddingOnly(ctx context.Context, db *sql.DB, appID int64) (map[string]float64, error) {
+// GetGameEmbeddingByAppID returns the TF-IDF embedding for a game (or nil if not found).
+func GetGameEmbeddingByAppID(ctx context.Context, db *sql.DB, appID int64) (map[string]float64, error) {
 	const q = `
 		SELECT COALESCE(tfidf_embedding, '{}'::jsonb)::text
 		FROM public.steam_games

@@ -1,0 +1,118 @@
+.mapWrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at center, rgba(246, 179, 91, 0.12), rgba(6, 10, 18, 0.85)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 24px
+    );
+  padding: 16px;
+  box-shadow: inset 0 0 60px rgba(6, 10, 18, 0.6);
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.dragging {
+  cursor: grabbing;
+}
+
+.mapSvg {
+  width: 100%;
+  height: calc(100vh - 160px);
+}
+
+.mapGuides circle {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-dasharray: 6 8;
+}
+
+.mapEdges {
+  stroke-linecap: round;
+  animation: mapReveal 800ms ease both;
+}
+
+.edgeLiked {
+  stroke: rgba(246, 179, 91, 0.6);
+  stroke-width: 2;
+  opacity: 0.85;
+}
+
+.edgeRec {
+  stroke: rgba(100, 245, 210, 0.35);
+  stroke-width: 1.5;
+  opacity: 0.6;
+}
+
+.edgeHot {
+  opacity: 1;
+  stroke-width: 2.4;
+}
+
+.node {
+  animation: nodePop 500ms ease both;
+}
+
+.nodeLabel {
+  fill: var(--color-text-muted);
+  font-size: 0.72rem;
+  text-anchor: middle;
+  opacity: 0.85;
+}
+
+.nodeUser {
+  fill: #f6b35b;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 14px rgba(246, 179, 91, 0.65));
+}
+
+.nodeLiked {
+  fill: rgba(100, 245, 210, 0.85);
+  stroke: rgba(100, 245, 210, 0.4);
+  stroke-width: 2;
+}
+
+.nodeRec {
+  fill: rgba(255, 255, 255, 0.85);
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1.5;
+}
+
+.nodeHot .nodeLabel {
+  opacity: 1;
+  fill: var(--color-text-strong);
+}
+
+.nodeHot circle {
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
+}
+
+@keyframes mapReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nodePop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

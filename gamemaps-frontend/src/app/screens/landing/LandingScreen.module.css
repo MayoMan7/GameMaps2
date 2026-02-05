@@ -1,0 +1,102 @@
+.page {
+  display: grid;
+  gap: 48px;
+}
+
+.hero {
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: center;
+}
+
+.heroCopy {
+  display: grid;
+  gap: 18px;
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.title {
+  font-size: clamp(2.8rem, 4vw, 4.4rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.lead {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  max-width: 48ch;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.heroFootnote {
+  color: rgba(244, 201, 143, 0.9);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.heroPanel {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at top right, rgba(246, 179, 91, 0.15), transparent 55%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 28px 60px rgba(6, 10, 18, 0.6);
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 32px;
+}
+
+.cardRow {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.cardText {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.profilePanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.profileTitle {
+  margin-bottom: 8px;
+}
+
+.profileText {
+  color: var(--color-text-muted);
+  max-width: 48ch;
+}

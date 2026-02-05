@@ -15,9 +15,11 @@ import (
 func (s *Server) UserRoutes(r *mux.Router) {
 	r.HandleFunc("/users", s.handleCreateUser).Methods("POST")
 	r.HandleFunc("/users/{id}", s.handleGetUserByID).Methods("GET")
+	r.HandleFunc("/users/{id}", s.handleUpdateUser).Methods("PATCH")
 	r.HandleFunc("/users/{userId}/like/{appId}", s.handleAddLikedGame).Methods("POST")
 	r.HandleFunc("/users/{id}/recompute-taste", s.handleRecomputeTaste).Methods("POST")
 	r.HandleFunc("/users/{id}/recommendations", s.handleGetUserRecommendations).Methods("GET")
+	r.HandleFunc("/users/{id}/map", s.handleGetUserMap).Methods("GET")
 }
 
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +70,7 @@ func (s *Server) handleGetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(Payload{Status: "success", Data: map[string]interface{}{
-		"id": user.ID, "name": user.Name, "games_liked": user.GamesLiked,
+		"id": user.ID, "name": user.Name, "email": user.Email, "games_liked": user.GamesLiked,
 	}})
 }
 
@@ -132,7 +134,7 @@ func (s *Server) handleGetUserRecommendations(w http.ResponseWriter, r *http.Req
 		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Invalid user ID"})
 		return
 	}
-	results, err := similar.FindGamesForUserTaste(r.Context(), s.DB, userID, 10, 10000)
+	results, err := similar.FindGamesForUserTaste(r.Context(), s.DB, userID, 10)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
@@ -144,4 +146,51 @@ func (s *Server) handleGetUserRecommendations(w http.ResponseWriter, r *http.Req
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(Payload{Status: "success", Data: recommendations})
+}
+
+func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	var userID int64
+	_, err := fmt.Sscanf(vars["id"], "%d", &userID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Invalid user ID"})
+		return
+	}
+	token := readSessionToken(r)
+	if token == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Not authenticated"})
+		return
+	}
+	sessionUser, err := db.GetUserBySession(r.Context(), s.DB, token)
+	if err != nil || sessionUser == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Not authenticated"})
+		return
+	}
+	if sessionUser.ID != userID {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Forbidden"})
+		return
+	}
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Invalid request body"})
+		return
+	}
+	if err := db.UpdateUserName(r.Context(), s.DB, userID, req.Name); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(Payload{Status: "success", Data: map[string]interface{}{
+		"id": userID, "name": req.Name,
+	}})
 }

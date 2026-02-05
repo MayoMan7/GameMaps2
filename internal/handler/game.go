@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"gogamemaps/internal/db"
 	"gogamemaps/internal/models"
@@ -71,7 +72,13 @@ func (s *Server) handleSearchGames(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Missing query parameter 'q'"})
 		return
 	}
-	results, err := db.SearchGameNames(r.Context(), s.DB, query, 5)
+	limit := 8
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if v, err := strconv.Atoi(raw); err == nil && v > 0 && v <= 25 {
+			limit = v
+		}
+	}
+	results, err := db.SearchGameNames(r.Context(), s.DB, query, limit)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})

@@ -28,6 +28,7 @@ type Game struct {
 type User struct {
 	ID             int64
 	Name           string
+	Email          string
 	GamesLiked     []int64
 	TasteEmbedding map[string]float64
 }
@@ -43,4 +44,30 @@ type SimilarResult struct {
 	AppID int64   `json:"app_id"`
 	Name  string  `json:"name"`
 	Score float64 `json:"score"`
+}
+
+// MapNode represents a node in the taste profile map.
+type MapNode struct {
+	ID     string  `json:"id"`
+	Label  string  `json:"label"`
+	Kind   string  `json:"kind"`
+	AppID  int64   `json:"app_id,omitempty"`
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Score  float64 `json:"score,omitempty"`
+	Anchor string  `json:"anchor,omitempty"`
+}
+
+// MapEdge represents a relationship between nodes.
+type MapEdge struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+	Kind string `json:"kind"`
+}
+
+// MapPayload is the full map data returned for rendering.
+type MapPayload struct {
+	UserID int64     `json:"user_id"`
+	Nodes  []MapNode `json:"nodes"`
+	Edges  []MapEdge `json:"edges"`
 }
