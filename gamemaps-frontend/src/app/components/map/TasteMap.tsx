@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./TasteMap.module.css";
 
 export type MapNode = {
@@ -101,12 +101,12 @@ export default function TasteMap({ payload, zoom = 1, onZoomChange }: TasteMapPr
     return { nodes, edges };
   }, [hoveredNodeId, payload]);
 
-  function applyWheel(deltaY: number) {
+  const applyWheel = useCallback((deltaY: number) => {
     if (!onZoomChange) return;
     const delta = deltaY > 0 ? -0.1 : 0.1;
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom + delta));
     onZoomChange(Number(next.toFixed(2)));
-  }
+  }, [onZoomChange, zoom]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -118,7 +118,7 @@ export default function TasteMap({ payload, zoom = 1, onZoomChange }: TasteMapPr
     };
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler);
-  }, [zoom, onZoomChange]);
+  }, [applyWheel]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;

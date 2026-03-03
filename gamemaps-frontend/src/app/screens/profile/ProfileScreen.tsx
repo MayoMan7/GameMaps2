@@ -11,7 +11,7 @@ import { apiSend } from "../../lib/api";
 import { useAuth } from "../../lib/useAuth";
 
 export default function ProfileScreen() {
-  const { user, login, register, logout, refresh } = useAuth();
+  const { user, login, register, logout, refresh, error } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,6 +26,9 @@ export default function ProfileScreen() {
   }
 
   async function handleLogin() {
+    if (!email.trim()) return toast("Enter your email.");
+    if (!password) return toast("Enter your password.");
+
     setBusy(true);
     try {
       const res = await login(email.trim(), password);
@@ -39,6 +42,10 @@ export default function ProfileScreen() {
   }
 
   async function handleRegister() {
+    if (!name.trim()) return toast("Enter a display name.");
+    if (!email.trim()) return toast("Enter your email.");
+    if (password.length < 6) return toast("Use a password with at least 6 characters.");
+
     setBusy(true);
     try {
       const res = await register(name.trim(), email.trim(), password);
@@ -54,6 +61,7 @@ export default function ProfileScreen() {
   async function handleUpdateName() {
     if (!user) return;
     if (!newName.trim()) return toast("Enter a new display name.");
+
     setBusy(true);
     try {
       const res = await apiSend(`/users/${user.id}`, { name: newName.trim() }, "PATCH");
@@ -75,6 +83,14 @@ export default function ProfileScreen() {
       toast("Signed out.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  function submitAuth() {
+    if (mode === "login") {
+      void handleLogin();
+    } else {
+      void handleRegister();
     }
   }
 
@@ -109,6 +125,9 @@ export default function ProfileScreen() {
                 placeholder="Your gamer handle"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitAuth();
+                }}
               />
             )}
             <Input
@@ -116,17 +135,24 @@ export default function ProfileScreen() {
               placeholder="you@domain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitAuth();
+              }}
             />
             <Input
               label="Password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitAuth();
+              }}
             />
-            <Button onClick={mode === "login" ? handleLogin : handleRegister} disabled={busy}>
+            <Button onClick={submitAuth} disabled={busy}>
               {mode === "login" ? "Login" : "Create Account"}
             </Button>
+            {error && <div className={styles.error}>{error}</div>}
             {msg && <div className={styles.toast}>{msg}</div>}
           </Card>
 
@@ -146,6 +172,11 @@ export default function ProfileScreen() {
                     placeholder="New handle"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        void handleUpdateName();
+                      }
+                    }}
                   />
                   <Button variant="outline" onClick={handleUpdateName} disabled={busy}>
                     Save

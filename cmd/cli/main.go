@@ -18,7 +18,12 @@ import (
 )
 
 func main() {
-	database, err := sql.Open("postgres", "postgresql://postgres:5274@localhost:5433/postgres?sslmode=disable")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL is required")
+	}
+
+	database, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +41,8 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("\nGameMaps CLI")
 	fmt.Println("Enter an app_id to get top 15 similar games.")
-	fmt.Println("Commands: 'q' to quit, 'help' for info.\n")
+	fmt.Println("Commands: 'q' to quit, 'help' for info.")
+	fmt.Println()
 
 	for {
 		fmt.Print("app_id> ")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styles from "./MapScreen.module.css";
 import Button from "../../components/ui/Button";
 import TasteMap, { MapPayload } from "../../components/map/TasteMap";
@@ -19,7 +19,7 @@ export default function MapScreen() {
     window.setTimeout(() => setMsg(null), 2400);
   }
 
-  async function loadMap() {
+  const loadMap = useCallback(async () => {
     if (!user) return toast("Login to load your taste map.");
     setBusy(true);
     try {
@@ -33,7 +33,7 @@ export default function MapScreen() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -41,7 +41,7 @@ export default function MapScreen() {
     } else {
       setPayload(null);
     }
-  }, [user]);
+  }, [user, loadMap]);
 
   return (
     <div className={styles.page}>

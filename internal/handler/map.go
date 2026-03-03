@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -23,37 +22,33 @@ type mapRec struct {
 }
 
 func (s *Server) handleGetUserMap(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
-	var userID int64
-	_, err := fmt.Sscanf(vars["id"], "%d", &userID)
+	userID, err := readPathInt64(vars, "id")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "Invalid user ID"})
+		writeJSON(w, http.StatusBadRequest, Payload{Status: "error", Error: "Invalid user ID"})
+		return
+	}
+	if !s.requireUserAccess(w, r, userID) {
 		return
 	}
 
 	user, err := db.GetUserByID(r.Context(), s.DB, userID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
+		writeServerError(w, "Failed to load user map.", err)
 		return
 	}
 	if user == nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(Payload{Status: "error", Error: "User not found"})
+		writeJSON(w, http.StatusNotFound, Payload{Status: "error", Error: "User not found"})
 		return
 	}
 
 	payload, err := s.buildUserMapPayload(r.Context(), user)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
+		writeServerError(w, "Failed to build user map.", err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Payload{Status: "success", Data: payload})
+	writeJSON(w, http.StatusOK, Payload{Status: "success", Data: payload})
 }
 
 func (s *Server) buildUserMapPayload(ctx context.Context, user *models.User) (models.MapPayload, error) {

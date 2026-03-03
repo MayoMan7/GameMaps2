@@ -58,6 +58,12 @@
   width: fit-content;
 }
 
+.error {
+  margin-top: 12px;
+  color: #ffb3b3;
+  font-size: 0.92rem;
+}
+
 @media (max-width: 900px) {
   .formRow {
     grid-template-columns: 1fr;

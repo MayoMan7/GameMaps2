@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	"gogamemaps/internal/handler"
 
@@ -14,7 +15,16 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("postgres", "postgresql://postgres:5274@localhost:5433/postgres?sslmode=disable")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL is required")
+	}
+	addr := os.Getenv("SERVER_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,6 +42,6 @@ func main() {
 	s.AuthRoutes(r)
 	s.HomeHandler(r)
 
-	log.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe("localhost:8080", r))
+	log.Printf("Listening on %s", addr)
+	log.Fatal(http.ListenAndServe(addr, r))
 }

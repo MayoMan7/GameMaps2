@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Oxanium, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import AppShell from "./components/layout/AppShell";
+import { AuthProvider } from "./lib/useAuth";
 
 const displayFont = Oxanium({
   variable: "--font-display",
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
-        <AppShell>{children}</AppShell>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );

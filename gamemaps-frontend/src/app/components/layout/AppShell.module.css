@@ -32,16 +32,16 @@
   color: var(--color-text-muted);
 }
 
-.links a {
+.navLink {
   position: relative;
   transition: color 150ms ease;
 }
 
-.links a:hover {
+.navLink:hover {
   color: var(--color-text-strong);
 }
 
-.links a::after {
+.navLink::after {
   content: "";
   position: absolute;
   left: 0;
@@ -54,7 +54,15 @@
   transition: transform 200ms ease;
 }
 
-.links a:hover::after {
+.navLink:hover::after {
+  transform: scaleX(1);
+}
+
+.active {
+  color: var(--color-text-strong);
+}
+
+.active::after {
   transform: scaleX(1);
 }
 

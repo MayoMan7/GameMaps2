@@ -78,7 +78,7 @@ async function apiGet<T>(path: string): Promise<ApiPayload<T>> {
   return json;
 }
 
-async function apiPost<T>(path: string, body?: any): Promise<ApiPayload<T>> {
+async function apiPost<T>(path: string, body?: unknown): Promise<ApiPayload<T>> {
   const res = await fetch(`/api${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -186,7 +186,7 @@ export default function HomeScreen() {
 
     setBusy(true);
     try {
-      const r = await apiPost<any>(`/users/${activeUser.id}/like/${selectedAppId}`);
+      const r = await apiPost<Record<string, unknown>>(`/users/${activeUser.id}/like/${selectedAppId}`);
       if (r.status !== "success") {
         return toast(r.error ?? "Failed to like game.");
       }
@@ -599,7 +599,7 @@ export default function HomeScreen() {
             <Card>
               {recs.length === 0 ? (
                 <div className={styles.emptyState}>
-                  Recompute taste, then click "Get Recommendations" to populate your drop list.
+                  Recompute taste, then click &quot;Get Recommendations&quot; to populate your drop list.
                 </div>
               ) : (
                 <div className={styles.recs}>

@@ -52,8 +52,7 @@ func (s *Server) handleGetRecommendedGames(w http.ResponseWriter, r *http.Reques
 	}
 	results, _, err := similar.FindSimilarGamesFromDB(r.Context(), s.DB, id, 10, 10000)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
+		writeServerError(w, "Failed to load recommendations.", err)
 		return
 	}
 	recommendations := make([]models.SimilarResult, len(results))
@@ -80,8 +79,7 @@ func (s *Server) handleSearchGames(w http.ResponseWriter, r *http.Request) {
 	}
 	results, err := db.SearchGameNames(r.Context(), s.DB, query, limit)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Payload{Status: "error", Error: err.Error()})
+		writeServerError(w, "Search failed.", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
