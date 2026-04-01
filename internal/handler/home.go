@@ -11,6 +11,8 @@ func (s *Server) HomeHandler(r *mux.Router) {
 }
 
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Welcome to the Game Database API"))
+	writeJSON(w, http.StatusOK, Payload{
+		Status: "success",
+		Data:   map[string]string{"message": "Barebones API"},
+	})
 }

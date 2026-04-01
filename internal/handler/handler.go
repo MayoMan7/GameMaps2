@@ -1,13 +1,7 @@
 package handler
 
-import (
-	"database/sql"
-)
-
-// Server holds dependencies for HTTP handlers.
-type Server struct {
-	DB *sql.DB
-}
+// Server is intentionally empty in the barebones build.
+type Server struct{}
 
 // Payload is the standard JSON response wrapper.
 type Payload struct {

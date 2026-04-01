@@ -1,5 +1,8 @@
-import RecommendationsScreen from "../screens/recommendations/RecommendationsScreen";
-
 export default function RecommendationsPage() {
-  return <RecommendationsScreen />;
+  return (
+    <section>
+      <h2>Recommendations</h2>
+      <p>Recommendation functionality removed.</p>
+    </section>
+  );
 }

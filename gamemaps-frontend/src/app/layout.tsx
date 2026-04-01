@@ -1,24 +1,10 @@
 import type { Metadata } from "next";
-import { Oxanium, Space_Grotesk } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
-import AppShell from "./components/layout/AppShell";
-import { AuthProvider } from "./lib/useAuth";
-
-const displayFont = Oxanium({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const bodyFont = Space_Grotesk({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 export const metadata: Metadata = {
-  title: "GameMaps",
-  description: "Player taste mapping and game recommendations.",
+  title: "GoGameMaps Barebones",
+  description: "Barebones frontend scaffold.",
 };
 
 export default function RootLayout({
@@ -28,10 +14,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${displayFont.variable} ${bodyFont.variable}`}>
-        <AuthProvider>
-          <AppShell>{children}</AppShell>
-        </AuthProvider>
+      <body>
+        <header className="header">
+          <h1>GoGameMaps</h1>
+          <nav>
+            <Link href="/">Home</Link>
+            <Link href="/search">Search</Link>
+            <Link href="/map">Map</Link>
+            <Link href="/recommendations">Recommendations</Link>
+            <Link href="/profile">Profile</Link>
+          </nav>
+        </header>
+        <main className="content">{children}</main>
       </body>
     </html>
   );

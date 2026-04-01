@@ -5,7 +5,7 @@ import styles from "./RecommendationsScreen.module.css";
 import Section from "../../components/layout/Section";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import { apiGet } from "../../lib/api";
+import { apiGet, apiSend } from "../../lib/api";
 import { useAuth } from "../../lib/useAuth";
 
 type RecommendedGame = {
@@ -41,6 +41,23 @@ export default function RecommendationsScreen() {
     }
   }
 
+  async function recomputeTaste() {
+    if (!user) return toast("Login to update your taste profile.");
+    setBusy(true);
+    try {
+      const res = await apiSend<{ games_used: number }>(`/users/${user.id}/recompute-taste`);
+      if (res.status !== "success" || !res.data) {
+        return toast(res.error ?? "Failed to recompute taste.");
+      }
+      if (res.data.games_used === 0) {
+        return toast("Like games first, then recompute taste.");
+      }
+      toast(`Taste updated from ${res.data.games_used} liked game(s).`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className={styles.page}>
       <Section
@@ -56,6 +73,9 @@ export default function RecommendationsScreen() {
             </div>
             <Button onClick={loadRecommendations} disabled={!user || busy}>
               {busy ? "Loading..." : "Load Recs"}
+            </Button>
+            <Button variant="outline" onClick={recomputeTaste} disabled={!user || busy}>
+              Recompute Taste
             </Button>
           </div>
           {msg && <div className={styles.toast}>{msg}</div>}

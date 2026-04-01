@@ -1,5 +1,8 @@
-import ProfileScreen from "../screens/profile/ProfileScreen";
-
 export default function ProfilePage() {
-  return <ProfileScreen />;
+  return (
+    <section>
+      <h2>Profile</h2>
+      <p>Profile functionality removed.</p>
+    </section>
+  );
 }
